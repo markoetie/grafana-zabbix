@@ -1,4 +1,4 @@
-import DBConnector from '../zabbix/connectors/dbConnector';
+import { DBConnector } from '../zabbix/connectors/dbConnector';
 
 describe('DBConnector', () => {
   let ctx = {};
