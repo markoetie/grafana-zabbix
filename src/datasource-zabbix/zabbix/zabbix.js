@@ -35,6 +35,7 @@ export class Zabbix {
       enableDirectDBConnection,
       dbConnectionDatasourceId,
       dbConnectionDatasourceName,
+      dbConnectionRetentionPolicy,
     } = options;
 
     this.enableDirectDBConnection = enableDirectDBConnection;
@@ -53,7 +54,8 @@ export class Zabbix {
     this.bindRequests();
 
     if (enableDirectDBConnection) {
-      this.initDBConnector(dbConnectionDatasourceId, dbConnectionDatasourceName, datasourceSrv)
+      const connectorOptions = { dbConnectionRetentionPolicy };
+      this.initDBConnector(dbConnectionDatasourceId, dbConnectionDatasourceName, datasourceSrv, connectorOptions)
       .then(() => {
         this.getHistoryDB = this.cachingProxy.proxyfyWithCache(this.dbConnector.getHistory, 'getHistory', this.dbConnector);
         this.getTrendsDB = this.cachingProxy.proxyfyWithCache(this.dbConnector.getTrends, 'getTrends', this.dbConnector);
@@ -61,14 +63,15 @@ export class Zabbix {
     }
   }
 
-  initDBConnector(datasourceId, datasourceName, datasourceSrv) {
+  initDBConnector(datasourceId, datasourceName, datasourceSrv, options) {
     return DBConnector.loadDatasource(datasourceId, datasourceName, datasourceSrv)
     .then(ds => {
-      const options = { datasourceId, datasourceName };
+      let connectorOptions = { datasourceId, datasourceName };
       if (ds.type === 'influxdb') {
-        this.dbConnector = new InfluxDBConnector(options, datasourceSrv);
+        connectorOptions.retentionPolicy = options.dbConnectionRetentionPolicy;
+        this.dbConnector = new InfluxDBConnector(connectorOptions, datasourceSrv);
       } else {
-        this.dbConnector = new SQLConnector(options, datasourceSrv);
+        this.dbConnector = new SQLConnector(connectorOptions, datasourceSrv);
       }
       return this.dbConnector;
     });
